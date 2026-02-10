@@ -5,11 +5,12 @@ first = "Hello World"
 # This is a comment
 
 # 3
-print("I AM A COMPUTER")
+print("I AM A COMPUTER!")
+
 
 # 4
 if 1 < 2 and 4 > 2:
-print("Math is fun")
+    print("Math is fun")
 
 # 5 
 x = nope
@@ -25,7 +26,7 @@ print(len(string))
 
 # 8
 string = "I am shouting"
-string.upper()
+string = string.upper()
 print(string)
 
 # 9
@@ -36,29 +37,33 @@ print(type(number))
 
 # 10
 words = ['4', 'real']
-sentence = '' .join(words)
+sentence = ''.join(words)
 print(sentence)
 
 # 11
-coolcoolcool
+coolcoolcool = "cool"
+print(coolcoolcool)
 
 # 12
 0
 
 # 13
-empty list
+empty_list = []
 
 # 14
 name = input("What is your name? ")
-print("Hi," name)
+print("Hi,", name)
+
 
 # 15
-number = int(input("choose a number"))
+number = int(input("choose a number: "))
 
-if number >= 0:
+if number > 0:
     print("That number is greater than 0")
+elif number == 0:
+    print(You picked 0!")
 else:
-    print("You picked 0!")
+    print("That number is negative!")
 
 # 16
 fruit = "apple"
@@ -68,7 +73,8 @@ print(index_of_l)
 
 # 17
 instrument = "xylophone"
-instrument.find("y")
+print(instrument.find("y"))
+
 
 # 18
 my_string = "Hello"
