@@ -1,10 +1,10 @@
 # 1
-values= [1, 2, 3, 4]
-for val in values :
-    print(val)
+values = [1, 2, 3, 4]
+[print(val) for val in values]
+
 # 2
-values= [1, 2, 3, 4]
-print(values * 20)
+result = [val * 20 for val in [1, 2, 3, 4]]
+print(result)
 
 # 3
 names= ["Elie", "Tim", "Matt"]
@@ -12,8 +12,10 @@ first_letters= [name[0] for name in names]
 print(first_letters)
 
 # 4
-numbers=[1, 2, 3, 4, 5, 6]
-print(numbers[ 1: : 2])
+numbers = [1, 2, 3, 4, 5, 6]
+even_numbers = [num for num in numbers if num % 2 == 0]
+print(even_numbers)
+
 
 # 5
 numbers1= [1, 2, 3, 4]
@@ -48,10 +50,45 @@ result = [char for char in word if char not in vowels]
 print(result)
 
 #10
-list = [[0, 1, 2]] * 3
-print(list)
+my_list = [[0, 1, 2] for _ in range(3)]
+print(my_list)
+
 
 #11
 
-list = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] * 10
-print(list)
+my_list = [[i for i in range(10)] for _ in range(10)]
+print(my_list)
+
+
+#1
+info = {}
+info['name'] = 'Elie'
+info['job'] = 'Instructor'
+print(info)
+
+#2
+abbreviations = ["CA", "NJ", "RI"]
+states = ["California", "New Jersey", "Rhode Island"]
+
+state_dict = dict(zip(abbreviations, states))
+print(state_dict)
+
+#3
+vowels = ['a', 'e', 'i', 'o', 'u']
+vowel_dict = {}
+
+for v in vowels:
+    vowel_dict[v] = 0
+
+print(vowel_dict)
+
+#4
+alphabet = 'abcdefghijklmnopqrstuvwxyz'
+alphabet_dict = {}
+position = 1  
+
+for letter in alphabet:
+    alphabet_dict[position] = letter
+    position += 1  
+
+print(alphabet_dict)
