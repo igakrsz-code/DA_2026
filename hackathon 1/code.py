@@ -139,6 +139,6 @@ class AnalysisPipeline:
         print("\n✔ Analysis Complete. Ready for Hackathon presentation.")
 
 if __name__ == "__main__":
-    # Ensure these files are in your folder!
+  
     pipeline = AnalysisPipeline("Fake.csv", "True.csv")
     pipeline.run()
