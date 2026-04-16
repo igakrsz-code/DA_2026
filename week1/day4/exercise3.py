@@ -136,54 +136,56 @@ import random
 def compare_random_number(user_number):
     """A function that generates a random number and compares it to the user's number."""
     random_number = random.randint(1, 100)
-    if user_number == random_number:
-        print("Success! Your number matches the random number.")
-    else:
-        print(f"Fail! Your number: {user_number}, Random number: {random_number}.")
-compare_random_number(50)
+#     if user_number == random_number:
+#         print("Success! Your number matches the random number.")
+#     else:
+#         print(f"Fail! Your number: {user_number}, Random number: {random_number}.")
+# compare_random_number(50)
 
-# Exercise 5 : Create Personalized Shirts
+# # Exercise 5 : Create Personalized Shirts
 
-def make_shirt(size = "large", text = "I love Python"):
-    """Function to create a personalized shirt."""
-    print(f"The size of the shirt is {size} and the text is: '{text}'")
-make_shirt()
-make_shirt(size = "medium")
-make_shirt(size = "small", text = "I like cheese")
+# def make_shirt(size = "large", text = "I love Python"):
+#     """Function to create a personalized shirt."""
+#     print(f"The size of the shirt is {size} and the text is: '{text}'")
+# make_shirt()
+# make_shirt(size = "medium")
+# make_shirt(size = "small", text = "I like cheese")
 
-# Exercise 6 
-magical_names = ["Harry Houdini", "David Copperfield", "Criss Angel"]
+# # Exercise 6 
+# magical_names = ["Harry Houdini", "David Copperfield", "Criss Angel"]
 
-def show_magicians(magical_names):
-    """Function to show the names of magicians."""
-    for name in magical_names:
-        print(name)
+# def show_magicians(magical_names):
+#     """Function to show the names of magicians."""
+#     for name in magical_names:
+#         print(name)
 
-def make_great(magical_names):
-    for i in range(len(magical_names)):
-        magical_names[i] = magical_names[i] + " the Great"  
+# def make_great(magical_names):
+#     for i in range(len(magical_names)):
+#         magical_names[i] = magical_names[i] + " the Great"  
 
-make_great(magical_names)
-show_magicians(magical_names)
+# make_great(magical_names)
+# show_magicians(magical_names)
 
-# Exercise 7
-def get_random_temp():
-    """Return a random temperature in Celsius."""
-    return random.randint(-10, 40)
-def main():
-    temp = get_random_temp()
-    print(f"The temperature right now is {temp} degrees Celsius.")
-    if temp < 0:
-        print("Brrr, that’s freezing! Wear some extra layers today.")
-    elif  0 <= temp <= 16:
-        print("Quite chilly! Don’t forget your coat.")
-    elif 16 < temp < 23:
-        print("Nice weather.")
-    elif 23 <= temp < 32:
-        print("A bit warm, stay hydrated.")
-    else:
-        print("It's really hot! Stay cool.")
-main()
+# # Exercise 7
+# import random
+# def get_random_temp():
+#     """Return a random temperature in Celsius."""
+#     return random.randint(-10, 40)
+# def main():
+#     temp = get_random_temp()
+#     print(f"The temperature right now is {temp} degrees Celsius.")
+    
+# if temp < 0:
+#         print("Brrr, that’s freezing! Wear some extra layers today.")
+#     elif  0 <= temp <= 16:
+#         print("Quite chilly! Don’t forget your coat.")
+#     elif 16 < temp < 23:
+#         print("Nice weather.")
+#     elif 23 <= temp < 32:
+#         print("A bit warm, stay hydrated.")
+#     else:
+#         print("It's really hot! Stay cool.")
+# main()
 
 
 

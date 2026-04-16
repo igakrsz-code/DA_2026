@@ -13,7 +13,7 @@ if 1 < 2 and 4 > 2:
     print("Math is fun")
 
 # 5 
-x = nope
+x = "nope"
 print(x)
 
 # 6
@@ -61,7 +61,7 @@ number = int(input("choose a number: "))
 if number > 0:
     print("That number is greater than 0")
 elif number == 0:
-    print(You picked 0!")
+    print("You picked 0!")
 else:
     print("That number is negative!")
 
@@ -82,4 +82,3 @@ if my_string.islower() :
     print("Wrong")
 else:
     print("False")
-

@@ -3,10 +3,10 @@ menu = {
     "latte": 12.0,
     "cappuccino": 10.0
 }
-def Show_menu(Menu_dict):
-    for item, price in Menu_dict.items():
+def Show_menu(menu_dict):
+    for item, price in menu_dict.items():
         print(f"{item}: ${price}")
-    if not Menu_dict:
+    if not menu_dict:
         print("The menu is empty.")
 Show_menu(menu)
 
