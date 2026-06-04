@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DataSearch — Job Market Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0c10;
+    --surface: #13141a;
+    --surface2: #1c1d25;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --accent: #00e5a0;
+    --accent2: #5b7fff;
+    --accent3: #ff6b6b;
+    --amber: #ffb830;
+    --text: #f0f0f0;
+    --muted: #7a7d8a;
+    --dimmed: #4a4d5a;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 1rem;
+    padding: 3rem 3rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,229,160,0.04) 0%, transparent 100%);
+  }
+  .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .logo-mark {
+    width: 34px; height: 34px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-weight: 800; font-size: 16px; color: #000;
+  }
+  .logo-name { font-family: var(--font-head); font-weight: 700; font-size: 18px; color: var(--text); letter-spacing: 0.5px; }
+  h1 { font-family: var(--font-head); font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; color: var(--text); }
+  h1 span { color: var(--accent); }
+  .header-sub { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .header-meta { text-align: right; }
+  .badge {
+    display: inline-block; padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
+    background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid rgba(0,229,160,0.25);
+    margin-bottom: 6px;
+  }
+  .meta-line { color: var(--muted); font-size: 12px; }
+
+  /* ── Nav tabs ── */
+  nav {
+    display: flex; gap: 0; padding: 0 3rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    overflow-x: auto;
+  }
+  nav button {
+    background: none; border: none; color: var(--muted);
+    font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+    padding: 14px 20px; cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.3px;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Main layout ── */
+  main { padding: 2.5rem 3rem; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Section headings ── */
+  .section-label {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); font-weight: 500; margin-bottom: 6px;
+  }
+  .section-title {
+    font-family: var(--font-head); font-size: 1.4rem; font-weight: 700;
+    color: var(--text); margin-bottom: 1.5rem;
+  }
+
+  /* ── KPI cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1.25rem 1rem;
+    position: relative; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .kpi-card.green::before { background: var(--accent); }
+  .kpi-card.blue::before { background: var(--accent2); }
+  .kpi-card.red::before { background: var(--accent3); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .kpi-value { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: var(--text); line-height: 1; }
+  .kpi-value.green { color: var(--accent); }
+  .kpi-value.blue { color: var(--accent2); }
+  .kpi-value.amber { color: var(--amber); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .kpi-trend { font-size: 11px; color: var(--accent); margin-top: 4px; }
+
+  /* ── Chart cards ── */
+  .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .chart-grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .chart-grid-2, .chart-grid-3 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem;
+  }
+  .card-title {
+    font-family: var(--font-head); font-size: 0.95rem; font-weight: 600;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .card-sub { font-size: 11px; color: var(--muted); margin-bottom: 1.25rem; }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* ── Skills bar ── */
+  .skill-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .skill-name { width: 120px; font-size: 12px; color: var(--text); flex-shrink: 0; }
+  .skill-bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .skill-bar { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+  .skill-count { width: 50px; text-align: right; font-size: 11px; color: var(--muted); }
+
+  /* ── Table ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    text-align: left; padding: 8px 12px; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .rank { color: var(--dimmed); width: 24px; }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px;
+    font-weight: 500;
+  }
+  .pill-green { background: rgba(0,229,160,0.12); color: var(--accent); }
+  .pill-blue { background: rgba(91,127,255,0.15); color: var(--accent2); }
+  .pill-amber { background: rgba(255,184,48,0.12); color: var(--amber); }
+
+  /* ── Insights panel ── */
+  .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 2rem; }
+  .insight-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem;
+  }
+  .insight-icon { font-size: 1.5rem; margin-bottom: 10px; }
+  .insight-title { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .insight-body { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .insight-highlight { color: var(--accent); font-weight: 500; }
+
+  /* ── Filter row ── */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .filter-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-mono); font-size: 11px;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: rgba(0,229,160,0.1); color: var(--accent);
+    border-color: rgba(0,229,160,0.3);
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center; padding: 2rem 3rem;
+    border-top: 1px solid var(--border);
+    color: var(--dimmed); font-size: 11px;
+  }
+  footer span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">
+      <div class="logo-mark">DS</div>
+      <div class="logo-name">DataSearch</div>
+    </div>
+    <h1>Job Market<br /><span>Analytics Report</span></h1>
+    <p class="header-sub">Data Science · Analytics · Engineering roles — 2017–2021</p>
+  </div>
+  <div class="header-meta">
+    <div class="badge">▲ LIVE DASHBOARD</div>
+    <div class="meta-line">25,114 job postings analyzed</div>
+    <div class="meta-line" style="margin-top:4px;">Source: LinkedIn Job Postings Dataset</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('overview', this)">Overview</button>
+  <button onclick="showTab('trends', this)">Posting Trends</button>
+  <button onclick="showTab('skills', this)">In-Demand Skills</button>
+  <button onclick="showTab('roles', this)">Roles & Pay</button>
+  <button onclick="showTab('insights', this)">Insights</button>
+</nav>
+
+<main>
+
+  <!-- ═══════════════════════════════════════ OVERVIEW ═══════ -->
+  <div id="tab-overview" class="tab-panel active">
+    <div class="section-label">01 / EXPLORATORY ANALYSIS</div>
+    <div class="section-title">Market at a Glance</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-label">Total Postings</div>
+        <div class="kpi-value green">25,114</div>
+        <div class="kpi-sub">2017 – 2021</div>
+        <div class="kpi-trend">↑ 172% growth over period</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Top Role</div>
+        <div class="kpi-value blue" style="font-size:1.3rem;">Software Eng.</div>
+        <div class="kpi-sub">8,112 postings (32%)</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Top Industry</div>
+        <div class="kpi-value amber" style="font-size:1.3rem;">Internet</div>
+        <div class="kpi-sub">5,052 postings (20%)</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">#1 In-Demand Skill</div>
+        <div class="kpi-value" style="font-size:1.5rem; color:var(--accent3);">Cloud</div>
+        <div class="kpi-sub">8,549 mentions</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Data Scientist Avg. Pay</div>
+        <div class="kpi-value green" style="font-size:1.4rem;">$147K</div>
+        <div class="kpi-sub">avg. annual salary</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Top City</div>
+        <div class="kpi-value blue" style="font-size:1.3rem;">SF, CA</div>
+        <div class="kpi-sub">848 postings</div>
+      </div>
+    </div>
+
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="card-title">Job Title Distribution</div>
+        <div class="card-sub">Top 8 roles by posting volume</div>
+        <div class="chart-wrap" style="height:280px;"><canvas id="titleChart" role="img" aria-label="Bar chart of top job titles by posting count">Top roles: Software Engineer 8112, Data Engineer 3462, Business Analyst 2009, Data Scientist 1999.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Top Hiring Industries</div>
+        <div class="card-sub">By number of job postings</div>
+        <div class="chart-wrap" style="height:280px;"><canvas id="industryChart" role="img" aria-label="Doughnut chart of top industries">Internet 5052, Computer Software 4729, IT Services 4462, Staffing 3699.</canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-grid-3">
+      <div class="card">
+        <div class="card-title">Top Hiring Cities</div>
+        <div class="card-sub">Excluding generic "United States" entries</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="cityChart" role="img" aria-label="Horizontal bar chart of top cities">San Francisco 848, New York 796, Chicago 621, Austin 507, Boston 467.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Seniority Mix</div>
+        <div class="card-sub">Position level breakdown</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="levelChart" role="img" aria-label="Pie chart of position levels">Mid-Senior 54%, Associate 28%, Entry 16%, Director 1%.</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TRENDS ═══════ -->
+  <div id="tab-trends" class="tab-panel">
+    <div class="section-label">02 / POSTING TRENDS</div>
+    <div class="section-title">How the Market Grew</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-label">2017 Postings</div>
+        <div class="kpi-value">3,001</div>
+        <div class="kpi-sub">baseline year</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">2021 Postings</div>
+        <div class="kpi-value green">8,174</div>
+        <div class="kpi-sub">peak year</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">CAGR</div>
+        <div class="kpi-value blue">28%</div>
+        <div class="kpi-sub">compound annual growth</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Biggest YoY Jump</div>
+        <div class="kpi-value amber">+63%</div>
+        <div class="kpi-sub">2019 → 2020</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Total Job Postings Per Year</div>
+      <div class="card-sub">All roles combined — 2017 to 2021</div>
+      <div class="chart-wrap" style="height:280px;"><canvas id="yearTrendChart" role="img" aria-label="Line chart of total postings per year">2017: 3001, 2018: 3757, 2019: 3877, 2020: 6305, 2021: 8174.</canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Data Roles Growth — Year Over Year</div>
+      <div class="card-sub">Data Analyst · Data Engineer · Data Scientist</div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="toggleSeries(this, 0)">Data Analyst</button>
+        <button class="filter-btn active" onclick="toggleSeries(this, 1)">Data Engineer</button>
+        <button class="filter-btn active" onclick="toggleSeries(this, 2)">Data Scientist</button>
+      </div>
+      <div class="chart-wrap" style="height:280px;"><canvas id="dataRolesChart" role="img" aria-label="Multi-line chart of data roles over time">All three roles grew steadily from 2017 to 2021.</canvas></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ SKILLS ═══════ -->
+  <div id="tab-skills" class="tab-panel">
+    <div class="section-label">03 / IN-DEMAND SKILLS</div>
+    <div class="section-title">What Employers Want</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-label">Cloud (AWS/Azure)</div>
+        <div class="kpi-value green">12.4K</div>
+        <div class="kpi-sub">combined mentions</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">SQL mentions</div>
+        <div class="kpi-value blue">8,412</div>
+        <div class="kpi-sub">universal requirement</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Python mentions</div>
+        <div class="kpi-value amber">7,986</div>
+        <div class="kpi-sub">top language</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">ML mentions</div>
+        <div class="kpi-value" style="color:var(--accent3);">2,990</div>
+        <div class="kpi-sub">emerging fast</div>
+      </div>
+    </div>
+
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="card-title">Top 15 In-Demand Skills</div>
+        <div class="card-sub">Total mentions across all postings</div>
+        <div id="skillBars" style="margin-top:8px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Skills by Category</div>
+        <div class="card-sub">Cloud · Languages · Data · Frameworks</div>
+        <div class="chart-wrap" style="height:320px;"><canvas id="skillCatChart" role="img" aria-label="Radar chart of skill categories">Cloud, Languages, Data skills, Frameworks, Soft skills.</canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Data Science Specific Skills</div>
+      <div class="card-sub">Skills most associated with Data Scientist and Data Analyst roles</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="dsSkillChart" role="img" aria-label="Bar chart of data science skills">Python, SQL, machine learning, tableau, spark, deep learning.</canvas></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ ROLES ═══════ -->
+  <div id="tab-roles" class="tab-panel">
+    <div class="section-label">04 / ROLES & COMPENSATION</div>
+    <div class="section-title">Career Landscape</div>
+
+    <div class="chart-grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Average Salary by Data Role</div>
+        <div class="card-sub">Annual compensation where pay was disclosed</div>
+        <div class="chart-wrap" style="height:220px;"><canvas id="payChart" role="img" aria-label="Bar chart of average salaries">Data Analyst $86K, Data Engineer $134K, Data Scientist $147K.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Role Volume Comparison</div>
+        <div class="card-sub">Total postings per job family</div>
+        <div class="chart-wrap" style="height:220px;"><canvas id="roleVolChart" role="img" aria-label="Horizontal bar chart of role volumes">Software Engineer 8112, Data Engineer 3462, Business Analyst 2009, Data Scientist 1999.</canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Top Job Titles — Detailed Breakdown</div>
+      <div class="card-sub">By posting count, with industry category</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="rank">#</th>
+            <th>Job Title</th>
+            <th>Postings</th>
+            <th>% of Total</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="rank">1</td><td>Software Engineer</td><td>8,112</td><td>32.3%</td><td><span class="pill pill-blue">Engineering</span></td></tr>
+          <tr><td class="rank">2</td><td>Data Engineer</td><td>3,462</td><td>13.8%</td><td><span class="pill pill-green">Data</span></td></tr>
+          <tr><td class="rank">3</td><td>Business Analyst</td><td>2,009</td><td>8.0%</td><td><span class="pill pill-amber">Analytics</span></td></tr>
+          <tr><td class="rank">4</td><td>Data Scientist</td><td>1,999</td><td>8.0%</td><td><span class="pill pill-green">Data</span></td></tr>
+          <tr><td class="rank">5</td><td>Developer</td><td>1,502</td><td>6.0%</td><td><span class="pill pill-blue">Engineering</span></td></tr>
+          <tr><td class="rank">6</td><td>Data Analyst</td><td>1,485</td><td>5.9%</td><td><span class="pill pill-green">Data</span></td></tr>
+          <tr><td class="rank">7</td><td>UX Researcher</td><td>897</td><td>3.6%</td><td><span class="pill pill-amber">Design</span></td></tr>
+          <tr><td class="rank">8</td><td>SW Dev. Engineer</td><td>506</td><td>2.0%</td><td><span class="pill pill-blue">Engineering</span></td></tr>
+          <tr><td class="rank">9</td><td>Product Manager</td><td>481</td><td>1.9%</td><td><span class="pill pill-amber">Product</span></td></tr>
+          <tr><td class="rank">10</td><td>Senior Analyst</td><td>463</td><td>1.8%</td><td><span class="pill pill-green">Analytics</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Company Size Hiring Breakdown</div>
+      <div class="card-sub">Which size companies post the most data roles</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="sizeChart" role="img" aria-label="Doughnut chart of company sizes">1001-5000: 34%, 201-500: 22%, 5001-10000: 18%, 51-200: 14%, others.</canvas></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ INSIGHTS ═══════ -->
+  <div id="tab-insights" class="tab-panel">
+    <div class="section-label">05 / STRATEGIC INSIGHTS</div>
+    <div class="section-title">Recommendations for DataSearch</div>
+
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-icon">🚀</div>
+        <div class="insight-title">Market Is Booming</div>
+        <div class="insight-body">
+          Job postings grew <span class="insight-highlight">172% from 2017 to 2021</span>, with a major acceleration in 2020–2021 (likely post-COVID digital transformation push). DataSearch should increase recruiter capacity ahead of continued demand.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">☁️</div>
+        <div class="insight-title">Cloud is Non-Negotiable</div>
+        <div class="insight-body">
+          Cloud skills (AWS + Azure combined) appear in over <span class="insight-highlight">49% of all postings</span>. Candidates without any cloud proficiency are increasingly screened out. DataSearch should prioritize cloud-certified candidates.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">🐍</div>
+        <div class="insight-title">Python + SQL = Table Stakes</div>
+        <div class="insight-body">
+          Python (8K mentions) and SQL (8.4K mentions) are the top languages by far. <span class="insight-highlight">Any data candidate lacking both should be considered entry-level</span> regardless of title. Use as a baseline screening filter.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">💰</div>
+        <div class="insight-title">Data Scientists Command Premium Pay</div>
+        <div class="insight-body">
+          Data Scientists average <span class="insight-highlight">$147K/year</span> — 70% more than Data Analysts ($86K). Engineers ($134K) close the gap. DataSearch can command higher placement fees for data science roles.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">🏙️</div>
+        <div class="insight-title">Concentrate on Key Metros</div>
+        <div class="insight-body">
+          San Francisco, New York, and Chicago together account for <span class="insight-highlight">over 22% of all city-specific postings</span>. These markets warrant dedicated recruiters. Austin and Boston are fast-growing secondary markets.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">📊</div>
+        <div class="insight-title">Mid-Senior Level Dominates</div>
+        <div class="insight-body">
+          54% of postings target <span class="insight-highlight">Mid-Senior level candidates</span> — the hardest to source. DataSearch should build a strong talent pipeline of 3–7 year professionals, as competition for them is highest.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">🏭</div>
+        <div class="insight-title">Tech Is the Primary Client Base</div>
+        <div class="insight-body">
+          Internet, Computer Software, and IT Services together represent <span class="insight-highlight">57% of all postings</span>. However, Financial Services (1,227 postings) and Healthcare (828) are significant non-tech verticals worth targeting.
+        </div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">🤖</div>
+        <div class="insight-title">ML & AI Skills Are Rising Fast</div>
+        <div class="insight-body">
+          Machine learning appears in <span class="insight-highlight">2,990 postings</span> and grew significantly in 2020–2021. DataSearch should develop a specialist ML/AI talent practice, as this segment will command the highest fees going forward.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">DataSearch — Recommended Action Plan</div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Priority</th><th>Action</th><th>Target Segment</th><th>Expected Impact</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill pill-green">HIGH</span></td>
+            <td>Build cloud-certified talent pool</td>
+            <td>Data Engineers, SWEs</td>
+            <td>Fills 49% of all open roles faster</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-green">HIGH</span></td>
+            <td>Open SF + NYC dedicated desks</td>
+            <td>All data roles</td>
+            <td>Captures top 2 metro markets</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-blue">MED</span></td>
+            <td>Launch ML/AI specialist practice</td>
+            <td>Data Scientists</td>
+            <td>High-fee placements, future demand</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-blue">MED</span></td>
+            <td>Expand into Financial Services</td>
+            <td>Data Analysts, Quants</td>
+            <td>Diversify from tech concentration</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-amber">LOW</span></td>
+            <td>Screen all candidates on Python+SQL</td>
+            <td>All data roles</td>
+            <td>Reduce screening time</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Built for <span>DataSearch</span> · Mini-Project 1 · Tableau &amp; Data Analytics Bootcamp · Data: LinkedIn Job Postings 2017–2021
+</footer>
+
+<script>
+const COLORS = {
+  green: '#00e5a0', blue: '#5b7fff', red: '#ff6b6b', amber: '#ffb830',
+  purple: '#b06fff', teal: '#00c9c9',
+  grid: 'rgba(255,255,255,0.05)', tick: '#7a7d8a'
+};
+
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: COLORS.grid }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'" } } },
+    y: { grid: { color: COLORS.grid }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'" } } }
+  }
+};
+
+function noScales(opts) {
+  const o = JSON.parse(JSON.stringify(opts));
+  delete o.scales;
+  return o;
+}
+
+/* ── Tab switcher ── */
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── OVERVIEW charts ── */
+new Chart(document.getElementById('titleChart'), {
+  type: 'bar',
+  data: {
+    labels: ['SW Eng.', 'Data Eng.', 'Biz Analyst', 'Data Sci.', 'Developer', 'Data Analyst', 'UX Res.', 'Prod. Mgr'],
+    datasets: [{
+      data: [8112, 3462, 2009, 1999, 1502, 1485, 897, 481],
+      backgroundColor: [COLORS.blue, COLORS.green, COLORS.amber, COLORS.green, COLORS.blue, COLORS.green, COLORS.purple, COLORS.amber],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: { ...baseOpts }
+});
+
+new Chart(document.getElementById('industryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Internet', 'Computer Software', 'IT & Services', 'Staffing', 'Financial', 'Healthcare', 'Other'],
+    datasets: [{
+      data: [5052, 4729, 4462, 3699, 1227, 828, 5117],
+      backgroundColor: [COLORS.green, COLORS.blue, COLORS.purple, COLORS.amber, COLORS.teal, COLORS.red, '#3a3d4a'],
+      borderWidth: 0, hoverOffset: 6
+    }]
+  },
+  options: {
+    ...noScales(baseOpts),
+    plugins: {
+      legend: {
+        display: true, position: 'right',
+        labels: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 }, boxWidth: 10, padding: 10 }
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('cityChart'), {
+  type: 'bar',
+  data: {
+    labels: ['San Francisco', 'New York', 'Chicago', 'Austin', 'Boston', 'Atlanta', 'Seattle', 'Los Angeles', 'Dallas'],
+    datasets: [{
+      data: [848, 796, 621, 507, 467, 458, 396, 367, 311],
+      backgroundColor: COLORS.blue, borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts, indexAxis: 'y',
+    scales: {
+      x: { grid: { color: COLORS.grid }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'" } } },
+      y: { grid: { display: false }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 } } }
+    }
+  }
+});
+
+new Chart(document.getElementById('levelChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Mid-Senior', 'Associate', 'Entry Level', 'Director', 'Internship', 'Executive'],
+    datasets: [{
+      data: [13577, 7084, 4133, 209, 82, 29],
+      backgroundColor: [COLORS.green, COLORS.blue, COLORS.amber, COLORS.purple, COLORS.teal, COLORS.red],
+      borderWidth: 0, hoverOffset: 6
+    }]
+  },
+  options: {
+    ...noScales(baseOpts),
+    plugins: {
+      legend: {
+        display: true, position: 'bottom',
+        labels: { color: COLORS.tick, font: { family: "'DM Mono'", size: 10 }, boxWidth: 10, padding: 8 }
+      }
+    }
+  }
+});
+
+/* ── TRENDS charts ── */
+new Chart(document.getElementById('yearTrendChart'), {
+  type: 'line',
+  data: {
+    labels: ['2017', '2018', '2019', '2020', '2021'],
+    datasets: [{
+      label: 'Total Postings',
+      data: [3001, 3757, 3877, 6305, 8174],
+      borderColor: COLORS.green, backgroundColor: 'rgba(0,229,160,0.08)',
+      tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: COLORS.green,
+      pointBorderColor: '#0b0c10', pointBorderWidth: 2
+    }]
+  },
+  options: { ...baseOpts }
+});
+
+const dataRolesData = {
+  labels: ['2017', '2018', '2019', '2020', '2021'],
+  datasets: [
+    { label: 'Data Analyst', data: [176, 219, 229, 360, 501], borderColor: COLORS.amber, backgroundColor: 'rgba(255,184,48,0.07)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: COLORS.amber, pointBorderColor: '#0b0c10', pointBorderWidth: 2 },
+    { label: 'Data Engineer', data: [444, 486, 531, 881, 1120], borderColor: COLORS.green, backgroundColor: 'rgba(0,229,160,0.07)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: COLORS.green, pointBorderColor: '#0b0c10', pointBorderWidth: 2 },
+    { label: 'Data Scientist', data: [238, 289, 311, 510, 651], borderColor: COLORS.blue, backgroundColor: 'rgba(91,127,255,0.07)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: COLORS.blue, pointBorderColor: '#0b0c10', pointBorderWidth: 2 }
+  ]
+};
+const dataRolesChart = new Chart(document.getElementById('dataRolesChart'), {
+  type: 'line', data: dataRolesData,
+  options: {
+    ...baseOpts,
+    plugins: {
+      legend: {
+        display: true, position: 'top',
+        labels: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 }, boxWidth: 10, padding: 16, usePointStyle: true }
+      }
+    }
+  }
+});
+
+function toggleSeries(btn, idx) {
+  btn.classList.toggle('active');
+  const meta = dataRolesChart.getDatasetMeta(idx);
+  meta.hidden = !meta.hidden;
+  dataRolesChart.update();
+}
+
+/* ── SKILLS ── */
+const skillData = [
+  { name: 'Cloud', count: 8549, color: COLORS.blue },
+  { name: 'SQL', count: 8412, color: COLORS.green },
+  { name: 'Python', count: 7986, color: COLORS.amber },
+  { name: 'AWS', count: 7038, color: COLORS.amber },
+  { name: 'Agile', count: 6108, color: COLORS.purple },
+  { name: 'Java', count: 4407, color: COLORS.red },
+  { name: 'Azure', count: 3896, color: COLORS.blue },
+  { name: 'Database', count: 3804, color: COLORS.teal },
+  { name: 'Excel', count: 3523, color: COLORS.green },
+  { name: 'JavaScript', count: 3447, color: COLORS.amber },
+  { name: 'Microsoft', count: 3088, color: COLORS.blue },
+  { name: 'ML', count: 2990, color: COLORS.purple },
+  { name: 'Docker', count: 2396, color: COLORS.teal },
+  { name: 'Tableau', count: 2331, color: COLORS.blue },
+  { name: 'ETL', count: 2193, color: COLORS.green },
+];
+const maxSkill = skillData[0].count;
+const container = document.getElementById('skillBars');
+skillData.forEach(s => {
+  const pct = Math.round(s.count / maxSkill * 100);
+  container.innerHTML += `
+    <div class="skill-row">
+      <div class="skill-name">${s.name}</div>
+      <div class="skill-bar-bg"><div class="skill-bar" style="width:${pct}%; background:${s.color};"></div></div>
+      <div class="skill-count">${(s.count/1000).toFixed(1)}K</div>
+    </div>`;
+});
+
+new Chart(document.getElementById('skillCatChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Cloud', 'Programming', 'Databases', 'ML / AI', 'Frameworks', 'Soft Skills'],
+    datasets: [{
+      label: 'Demand Index',
+      data: [95, 88, 72, 40, 55, 65],
+      backgroundColor: 'rgba(0,229,160,0.15)', borderColor: COLORS.green,
+      pointBackgroundColor: COLORS.green, pointBorderColor: '#0b0c10', pointBorderWidth: 2, pointRadius: 5
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      r: {
+        grid: { color: COLORS.grid },
+        angleLines: { color: COLORS.grid },
+        pointLabels: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 } },
+        ticks: { display: false },
+        suggestedMin: 0, suggestedMax: 100
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('dsSkillChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Python', 'SQL', 'Machine\nLearning', 'Tableau', 'Spark', 'Deep\nLearning', 'Statistics', 'R'],
+    datasets: [{
+      data: [7986, 8412, 2990, 2331, 1850, 980, 870, 640],
+      backgroundColor: [COLORS.amber, COLORS.green, COLORS.purple, COLORS.blue, COLORS.teal, COLORS.red, COLORS.amber, COLORS.green],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: { ...baseOpts }
+});
+
+/* ── ROLES charts ── */
+new Chart(document.getElementById('payChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Data Analyst', 'Data Engineer', 'Data Scientist'],
+    datasets: [{
+      data: [86292, 133545, 146900],
+      backgroundColor: [COLORS.amber, COLORS.blue, COLORS.green],
+      borderRadius: 6, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts,
+    scales: {
+      x: { grid: { display: false }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 } } },
+      y: {
+        grid: { color: COLORS.grid },
+        ticks: {
+          color: COLORS.tick, font: { family: "'DM Mono'" },
+          callback: v => '$' + (v/1000).toFixed(0) + 'K'
+        }
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('roleVolChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Software Eng.', 'Data Engineer', 'Biz Analyst', 'Data Scientist', 'Developer', 'Data Analyst'],
+    datasets: [{
+      data: [8112, 3462, 2009, 1999, 1502, 1485],
+      backgroundColor: [COLORS.blue, COLORS.green, COLORS.amber, COLORS.green, COLORS.blue, COLORS.teal],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts, indexAxis: 'y',
+    scales: {
+      x: { grid: { color: COLORS.grid }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'" } } },
+      y: { grid: { display: false }, ticks: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 } } }
+    }
+  }
+});
+
+new Chart(document.getElementById('sizeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['1,001–5,000', '201–500', '5,001–10,000', '51–200', '10,001+', '1–50'],
+    datasets: [{
+      data: [8538, 5525, 4521, 3517, 2511, 502],
+      backgroundColor: [COLORS.green, COLORS.blue, COLORS.amber, COLORS.purple, COLORS.teal, COLORS.red],
+      borderWidth: 0, hoverOffset: 6
+    }]
+  },
+  options: {
+    ...noScales(baseOpts),
+    plugins: {
+      legend: {
+        display: true, position: 'right',
+        labels: { color: COLORS.tick, font: { family: "'DM Mono'", size: 11 }, boxWidth: 10, padding: 10 }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
