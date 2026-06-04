@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WarmeHands Inc. — Inventory Analysis Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f3ef;
+  --surface:#ffffff;
+  --surface2:#faf9f7;
+  --ink:#1a1814;
+  --ink2:#4a4740;
+  --ink3:#9a9690;
+  --border:#e2ddd8;
+  --border2:#ccc8c2;
+  --A:#1a6b45;
+  --A-bg:#eaf5ef;
+  --A-mid:#2d9e68;
+  --B:#1a4a8a;
+  --B-bg:#eaf0fb;
+  --B-mid:#2e6dc4;
+  --C:#7a4a10;
+  --C-bg:#fdf3e7;
+  --C-mid:#c47a2e;
+  --warn:#c0392b;
+  --warn-bg:#fdf0ef;
+  --head:'Space Grotesk',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --r:10px;--r-sm:6px;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:12px;line-height:1.5;min-height:100vh}
+
+/* ── HEADER ── */
+header{background:var(--ink);color:#fff;padding:2.5rem 3rem 2rem;display:grid;grid-template-columns:1fr auto;align-items:end;gap:2rem}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.brand-mark{width:36px;height:36px;background:#e8d44d;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:700;font-size:15px;color:var(--ink)}
+.brand-name{font-family:var(--head);font-size:1rem;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:.5px}
+h1{font-family:var(--head);font-size:clamp(1.6rem,4vw,2.6rem);font-weight:700;line-height:1.1;color:#fff}
+h1 em{color:#e8d44d;font-style:normal}
+.header-sub{color:rgba(255,255,255,0.45);font-size:11px;margin-top:8px}
+.header-right{text-align:right}
+.dataset-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px}
+.dataset-badge span{color:#e8d44d;font-weight:500}
+.header-stat{font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px}
+
+/* ── NAV ── */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 3rem;display:flex;gap:0;overflow-x:auto}
+nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--ink3);font-family:var(--mono);font-size:11px;font-weight:500;padding:13px 18px;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;letter-spacing:.3px}
+nav button:hover{color:var(--ink)}
+nav button.active{color:var(--ink);border-bottom-color:var(--ink)}
+
+/* ── LAYOUT ── */
+main{padding:2rem 3rem}
+.tab{display:none}.tab.active{display:block}
+.section-tag{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--ink3);margin-bottom:4px}
+.section-title{font-family:var(--head);font-size:1.3rem;font-weight:700;color:var(--ink);margin-bottom:1.5rem}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.1rem .9rem;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.kpi.k-green::after{background:var(--A-mid)}
+.kpi.k-blue::after{background:var(--B-mid)}
+.kpi.k-amber::after{background:var(--C-mid)}
+.kpi.k-red::after{background:var(--warn)}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:7px}
+.kpi-val{font-family:var(--head);font-size:1.8rem;font-weight:700;color:var(--ink);line-height:1}
+.kpi-sub{font-size:10px;color:var(--ink3);margin-top:5px}
+.kpi-note{font-size:10px;margin-top:3px;font-weight:500}
+.kpi-note.up{color:var(--A)}
+.kpi-note.down{color:var(--warn)}
+
+/* ── CHART CARDS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem}
+.card-title{font-family:var(--head);font-size:.9rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.card-sub{font-size:10px;color:var(--ink3);margin-bottom:1rem}
+.chart-box{position:relative;width:100%}
+
+/* ── ABC PILLS ── */
+.abc-a{background:var(--A-bg);color:var(--A);border:1px solid rgba(26,107,69,.2);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.abc-b{background:var(--B-bg);color:var(--B);border:1px solid rgba(26,74,138,.2);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.abc-c{background:var(--C-bg);color:var(--C);border:1px solid rgba(122,74,16,.2);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.cat-pill{background:var(--bg);border:1px solid var(--border);color:var(--ink2);padding:2px 7px;border-radius:10px;font-size:10px}
+
+/* ── TABLE ── */
+.dtable{width:100%;border-collapse:collapse;font-size:11px}
+.dtable th{text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+.dtable td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle}
+.dtable tr:last-child td{border-bottom:none}
+.dtable tr:hover td{background:var(--surface2)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.pos{color:var(--A);font-weight:500}
+.neg{color:var(--warn);font-weight:500}
+
+/* ── PROGRESS BARS ── */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.bar-lbl{width:130px;font-size:11px;color:var(--ink2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-bg{flex:1;height:7px;background:var(--bg);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bar-num{width:55px;text-align:right;font-size:10px;color:var(--ink3);flex-shrink:0}
+
+/* ── ABC MATRIX ── */
+.abc-matrix{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.abc-block{border-radius:var(--r);padding:1.2rem;border:1px solid}
+.abc-block.A{background:var(--A-bg);border-color:rgba(26,107,69,.2)}
+.abc-block.B{background:var(--B-bg);border-color:rgba(26,74,138,.2)}
+.abc-block.C{background:var(--C-bg);border-color:rgba(122,74,16,.2)}
+.abc-class-tag{font-family:var(--head);font-size:2rem;font-weight:700;line-height:1;margin-bottom:4px}
+.abc-block.A .abc-class-tag{color:var(--A)}
+.abc-block.B .abc-class-tag{color:var(--B)}
+.abc-block.C .abc-class-tag{color:var(--C)}
+.abc-stat{font-size:11px;color:var(--ink2);margin-top:2px}
+.abc-stat strong{font-family:var(--head);font-size:.95rem;font-weight:700;color:var(--ink)}
+
+/* ── TOOLTIP ── */
+#tooltip{position:fixed;background:var(--ink);color:#fff;padding:8px 12px;border-radius:var(--r-sm);font-size:11px;pointer-events:none;display:none;z-index:99;max-width:220px;line-height:1.6}
+
+/* ── INSIGHT CARDS ── */
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:1.5rem}
+.insight{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;border-left:3px solid var(--border2)}
+.insight.green{border-left-color:var(--A-mid)}
+.insight.blue{border-left-color:var(--B-mid)}
+.insight.amber{border-left-color:var(--C-mid)}
+.insight.red{border-left-color:var(--warn)}
+.insight-title{font-family:var(--head);font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:5px}
+.insight-body{font-size:11px;color:var(--ink2);line-height:1.7}
+.highlight{color:var(--A);font-weight:600}
+.highlight-b{color:var(--B);font-weight:600}
+.highlight-r{color:var(--warn);font-weight:600}
+
+/* ── FILTER BTN ── */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.fbtn{background:var(--bg);border:1px solid var(--border);color:var(--ink2);font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .15s}
+.fbtn:hover,.fbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:1.5rem 3rem;border-top:1px solid var(--border);color:var(--ink3);font-size:10px}
+footer strong{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div id="tooltip"></div>
+
+<header>
+  <div>
+    <div class="brand">
+      <div class="brand-mark">W</div>
+      <div class="brand-name">WarmeHands Inc.</div>
+    </div>
+    <h1>Inventory<br/><em>Analysis Dashboard</em></h1>
+    <p class="header-sub">Acropolis Retail Dataset · 104 SKUs · Orders Jan 2021 – Jan 2022</p>
+  </div>
+  <div class="header-right">
+    <div class="dataset-badge">Dataset: <span>Acropolis_Retail_data.xlsx</span></div>
+    <div class="header-stat">104 products · 13,333 order lines</div>
+    <div class="header-stat" style="margin-top:3px;">5 categories · 12 countries</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('overview',this)">Overview</button>
+  <button onclick="showTab('turnover',this)">Inventory Turnover</button>
+  <button onclick="showTab('abc',this)">ABC Analysis</button>
+  <button onclick="showTab('revenue',this)">Revenue & Categories</button>
+  <button onclick="showTab('purchasing',this)">Smart Purchasing</button>
+</nav>
+
+<main>
+
+<!-- ════════════════════ OVERVIEW ════════════════════ -->
+<div id="tab-overview" class="tab active">
+  <div class="section-tag">01 / EXECUTIVE OVERVIEW</div>
+  <div class="section-title">Business Performance at a Glance</div>
+
+  <div class="kpi-row">
+    <div class="kpi k-blue">
+      <div class="kpi-label">2021 Revenue</div>
+      <div class="kpi-val">£446K</div>
+      <div class="kpi-sub">13,333 order lines</div>
+      <div class="kpi-note down">↓ vs £599K in 2020</div>
+    </div>
+    <div class="kpi k-red">
+      <div class="kpi-label">Total COGS 2020</div>
+      <div class="kpi-val">£1.24M</div>
+      <div class="kpi-sub">across 104 SKUs</div>
+      <div class="kpi-note down">Costs exceed revenue</div>
+    </div>
+    <div class="kpi k-amber">
+      <div class="kpi-label">Avg Inv. Turnover</div>
+      <div class="kpi-val">16.4×</div>
+      <div class="kpi-sub">median: 7.8×</div>
+      <div class="kpi-note">High variance across SKUs</div>
+    </div>
+    <div class="kpi k-green">
+      <div class="kpi-label">Class A SKUs</div>
+      <div class="kpi-val">18</div>
+      <div class="kpi-sub">17% of products</div>
+      <div class="kpi-note up">Drive 68% of revenue</div>
+    </div>
+    <div class="kpi k-blue">
+      <div class="kpi-label">Active Countries</div>
+      <div class="kpi-val">12+</div>
+      <div class="kpi-sub">UK leads at £60K</div>
+    </div>
+    <div class="kpi k-red">
+      <div class="kpi-label">Slow-Movers (TO&lt;5)</div>
+      <div class="kpi-val">39</div>
+      <div class="kpi-sub">37% of all SKUs</div>
+      <div class="kpi-note down">Excess stock risk</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Monthly Revenue — 2021</div>
+      <div class="card-sub">Strong Q4 seasonality — Oct–Dec peak</div>
+      <div class="chart-box" style="height:240px"><canvas id="monthlyChart" role="img" aria-label="Monthly revenue 2021">Oct–Dec peaks at £65K, £61K, £44K.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Revenue by Country (Top 12)</div>
+      <div class="card-sub">2021 order revenue · all SKUs</div>
+      <div class="chart-box" style="height:240px"><canvas id="countryChart" role="img" aria-label="Revenue by country">UK leads, followed by USA and France.</canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Revenue by Category — 2021</div>
+      <div class="card-sub">Home accessories and Decoration dominate</div>
+      <div class="chart-box" style="height:220px"><canvas id="catRevChart" role="img" aria-label="Revenue by category">Home accessories £179K, Decoration £152K.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">ABC Revenue Distribution</div>
+      <div class="card-sub">Pareto principle confirmed in this dataset</div>
+      <div class="chart-box" style="height:220px"><canvas id="abcRevChart" role="img" aria-label="ABC revenue split">A=68%, B=21%, C=11%.</canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ TURNOVER ════════════════════ -->
+<div id="tab-turnover" class="tab">
+  <div class="section-tag">02 / INVENTORY TURNOVER</div>
+  <div class="section-title">How Fast Is Stock Moving?</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:.8rem 1rem;">
+    <strong style="color:var(--ink);">Calculated Field:</strong>
+    &nbsp;Inventory Turnover = COGS<sub>2020</sub> ÷ Opening Stock<sub>2021</sub>
+    &nbsp;·&nbsp; COGS = (Raw Material + Labour + Equipment + Distribution + Advertising) × Units Sold
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi k-green">
+      <div class="kpi-label">Highest Turnover</div>
+      <div class="kpi-val" style="font-size:1.4rem">72.6×</div>
+      <div class="kpi-sub">CLASSIC METAL BIRDCAGE</div>
+    </div>
+    <div class="kpi k-red">
+      <div class="kpi-label">Lowest Turnover</div>
+      <div class="kpi-val" style="font-size:1.4rem">0.6×</div>
+      <div class="kpi-sub">Dead-stock risk SKUs</div>
+    </div>
+    <div class="kpi k-amber">
+      <div class="kpi-label">Median Turnover</div>
+      <div class="kpi-val">7.8×</div>
+      <div class="kpi-sub">50% of SKUs below this</div>
+    </div>
+    <div class="kpi k-blue">
+      <div class="kpi-label">Fast Movers (TO≥20)</div>
+      <div class="kpi-val">23</div>
+      <div class="kpi-sub">22% of all SKUs</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Turnover Distribution — All SKUs</div>
+      <div class="card-sub">Number of products in each turnover band</div>
+      <div class="chart-box" style="height:240px"><canvas id="turnoverDistChart" role="img" aria-label="Turnover distribution">39 SKUs below 5x turnover.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avg Turnover by Category</div>
+      <div class="card-sub">Jewelry leads; Office &amp; School lags</div>
+      <div class="chart-box" style="height:240px"><canvas id="catTurnChart" role="img" aria-label="Turnover by category">Jewelry 23.2x, Decoration 20.4x, Home accessories 17.6x.</canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Turnover vs. 2021 Revenue — Bubble Chart</div>
+    <div class="card-sub">Bubble size = units sold 2021 · Color = ABC class · Hover for details</div>
+    <div class="filter-row">
+      <button class="fbtn on" onclick="filterScatter(this,'ALL')">All</button>
+      <button class="fbtn" onclick="filterScatter(this,'A')">Class A</button>
+      <button class="fbtn" onclick="filterScatter(this,'B')">Class B</button>
+      <button class="fbtn" onclick="filterScatter(this,'C')">Class C</button>
+    </div>
+    <div class="chart-box" style="height:380px"><canvas id="scatterChart" role="img" aria-label="Scatter plot of turnover vs revenue for all 104 SKUs"></canvas></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">Top 15 Products by Turnover Rate</div>
+    <div class="card-sub">Fast-moving stock — high replenishment priority</div>
+    <table class="dtable" id="turnoverTable"></table>
+  </div>
+</div>
+
+<!-- ════════════════════ ABC ════════════════════ -->
+<div id="tab-abc" class="tab">
+  <div class="section-tag">03 / ABC ANALYSIS</div>
+  <div class="section-title">Product Classification by Revenue Contribution</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:.8rem 1rem;">
+    <strong style="color:var(--ink);">Methodology:</strong> Products ranked by 2021 revenue (descending) →
+    Cumulative % calculated → <strong style="color:var(--A)">A</strong> = top 70% of revenue,
+    <strong style="color:var(--B)">B</strong> = next 20% (70–90%),
+    <strong style="color:var(--C)">C</strong> = bottom 10%
+  </div>
+
+  <div class="abc-matrix">
+    <div class="abc-block A">
+      <div class="abc-class-tag">A</div>
+      <div class="abc-stat">SKUs: <strong>18</strong> (17%)</div>
+      <div class="abc-stat">Revenue: <strong>£305,459</strong></div>
+      <div class="abc-stat">Share: <strong>68.5%</strong></div>
+      <div style="margin-top:8px;font-size:10px;color:var(--A)">▲ Maximum priority — never stock out</div>
+    </div>
+    <div class="abc-block B">
+      <div class="abc-class-tag">B</div>
+      <div class="abc-stat">SKUs: <strong>17</strong> (16%)</div>
+      <div class="abc-stat">Revenue: <strong>£93,182</strong></div>
+      <div class="abc-stat">Share: <strong>20.9%</strong></div>
+      <div style="margin-top:8px;font-size:10px;color:var(--B)">◆ Medium priority — regular monitoring</div>
+    </div>
+    <div class="abc-block C">
+      <div class="abc-class-tag">C</div>
+      <div class="abc-stat">SKUs: <strong>69</strong> (66%)</div>
+      <div class="abc-stat">Revenue: <strong>£47,369</strong></div>
+      <div class="abc-stat">Share: <strong>10.6%</strong></div>
+      <div style="margin-top:8px;font-size:10px;color:var(--C)">▼ Low priority — rationalise or reduce</div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card">
+      <div class="card-title">Cumulative Revenue Curve (Pareto)</div>
+      <div class="card-sub">Ranked products — showing A/B/C breakpoints</div>
+      <div class="chart-box" style="height:280px"><canvas id="paretoChart" role="img" aria-label="Pareto curve showing cumulative revenue">70% revenue from ~17% of products.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">ABC SKU Count vs Revenue</div>
+      <div class="card-sub">Classic 80/20 imbalance</div>
+      <div class="chart-box" style="height:280px"><canvas id="abcCompareChart" role="img" aria-label="ABC comparison of SKU count vs revenue">A has few SKUs but most revenue.</canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Full ABC Classification Table</div>
+    <div class="card-sub">All 104 products · sorted by 2021 revenue · calculated fields shown</div>
+    <div class="filter-row">
+      <button class="fbtn on" onclick="filterTable(this,'ALL')">All (104)</button>
+      <button class="fbtn" onclick="filterTable(this,'A')">Class A (18)</button>
+      <button class="fbtn" onclick="filterTable(this,'B')">Class B (17)</button>
+      <button class="fbtn" onclick="filterTable(this,'C')">Class C (69)</button>
+    </div>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+      <table class="dtable" id="abcTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ REVENUE ════════════════════ -->
+<div id="tab-revenue" class="tab">
+  <div class="section-tag">04 / REVENUE & CATEGORIES</div>
+  <div class="section-title">2020 vs 2021 Comparison</div>
+
+  <div class="kpi-row">
+    <div class="kpi k-blue">
+      <div class="kpi-label">2020 Revenue</div>
+      <div class="kpi-val">£599K</div>
+      <div class="kpi-sub">baseline year</div>
+    </div>
+    <div class="kpi k-red">
+      <div class="kpi-label">2021 Revenue</div>
+      <div class="kpi-val">£446K</div>
+      <div class="kpi-sub">13,333 orders recorded</div>
+      <div class="kpi-note down">↓ –25.5% YoY</div>
+    </div>
+    <div class="kpi k-green">
+      <div class="kpi-label">Top Category</div>
+      <div class="kpi-val" style="font-size:1.1rem">Home Acc.</div>
+      <div class="kpi-sub">£178,795 · 34 SKUs</div>
+    </div>
+    <div class="kpi k-amber">
+      <div class="kpi-label">Avg TO: Office</div>
+      <div class="kpi-val">3.4×</div>
+      <div class="kpi-sub">Slowest category</div>
+      <div class="kpi-note down">Overstocked risk</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">2020 vs 2021 Revenue by Category</div>
+      <div class="card-sub">Grouped bar — year-on-year comparison</div>
+      <div class="chart-box" style="height:260px"><canvas id="catCompChart" role="img" aria-label="Category revenue comparison 2020 vs 2021">All categories declined in 2021.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Gross Profit Margin by Category</div>
+      <div class="card-sub">2020 data · most products run negative margins</div>
+      <div class="chart-box" style="height:260px"><canvas id="marginChart" role="img" aria-label="Profit margin by category">All categories show negative margins.</canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Category Deep-Dive — All Metrics</div>
+    <div class="card-sub">Calculated fields: COGS, Revenue, Gross Profit, Inventory Turnover</div>
+    <div id="catBars"></div>
+  </div>
+</div>
+
+<!-- ════════════════════ PURCHASING ════════════════════ -->
+<div id="tab-purchasing" class="tab">
+  <div class="section-tag">05 / SMART PURCHASING</div>
+  <div class="section-title">Recommendations for WarmeHands Inc.</div>
+
+  <div class="insight-grid">
+    <div class="insight green">
+      <div class="insight-title">🟢 Prioritise Class A Stock Replenishment</div>
+      <div class="insight-body">18 SKUs drive <span class="highlight">68.5% of revenue</span>. Never allow stockouts on products like GROW A FLYTRAP TIN (£33.7K), SET OF 6 SOLDIER SKITTLES (£26.2K), or WOODLAND CHARLOTTE BAG (£24K). Maintain safety stock of at least 2× average monthly demand.</div>
+    </div>
+    <div class="insight red">
+      <div class="insight-title">🔴 COGS Exceed Revenue — Urgent Pricing Review</div>
+      <div class="insight-body">Total 2020 COGS (£1.24M) vastly exceeds revenue (£599K). <span class="highlight-r">Negative margins are systemic</span>, not isolated. Factory equipment rent and advertisement costs are primary drivers. A cost audit and retail price adjustment is critical.</div>
+    </div>
+    <div class="insight amber">
+      <div class="insight-title">🟡 Liquidate 39 Slow-Moving SKUs</div>
+      <div class="insight-body"><span class="highlight-b">37% of SKUs have turnover below 5×</span>, tying up capital in excess inventory. Office &amp; School category averages only 3.4× turnover. Consider promotional pricing, bundling, or discontinuing the lowest performers (Class C, TO &lt; 2×).</div>
+    </div>
+    <div class="insight blue">
+      <div class="insight-title">🔵 Lean Into Q4 Seasonality</div>
+      <div class="insight-body">October and November together generated <span class="highlight">£126K</span> — 28% of annual revenue. Purchasing plans should front-load stock by September. Q1 is the weakest period (£17K in January) — minimise orders then.</div>
+    </div>
+    <div class="insight green">
+      <div class="insight-title">🟢 Expand UK &amp; USA Market Focus</div>
+      <div class="insight-body">United Kingdom (£60K) and USA (£51K) are the top two markets and together represent <span class="highlight">25% of 2021 revenue</span>. Targeted marketing and local stocking agreements in these markets could significantly increase throughput for Class A products.</div>
+    </div>
+    <div class="insight amber">
+      <div class="insight-title">🟡 Jewelry Category: High Turnover, Low Volume</div>
+      <div class="insight-body">Jewelry has the <span class="highlight-b">highest average turnover (23.2×)</span> but only £3,967 in 2021 revenue across 13 SKUs. This signals strong demand relative to stock levels — consider significantly increasing purchasing quantities for this category.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Purchasing Priority Matrix</div>
+    <div class="card-sub">Action plan by ABC class × turnover speed</div>
+    <table class="dtable">
+      <thead>
+        <tr><th>Priority</th><th>ABC Class</th><th>Turnover</th><th>Action</th><th>SKU Count</th><th>Est. Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="abc-a">CRITICAL</span></td><td>A</td><td>≥ 10×</td><td>Immediate restocking — maintain high buffer</td><td class="num">9</td><td class="num pos">£220K+ revenue</td></tr>
+        <tr><td><span class="abc-a">HIGH</span></td><td>A</td><td>5–10×</td><td>Regular top-ups — weekly monitoring</td><td class="num">9</td><td class="num pos">£85K revenue</td></tr>
+        <tr><td><span class="abc-b">MEDIUM</span></td><td>B</td><td>≥ 5×</td><td>Monthly replenishment cycle</td><td class="num">11</td><td class="num pos">£65K revenue</td></tr>
+        <tr><td><span class="abc-b">MONITOR</span></td><td>B</td><td>&lt; 5×</td><td>Review demand forecast before ordering</td><td class="num">6</td><td class="num">£28K revenue</td></tr>
+        <tr><td><span class="abc-c">REDUCE</span></td><td>C</td><td>&lt; 5×</td><td>Reduce orders — run-down existing stock</td><td class="num">34</td><td class="num neg">Excess stock</td></tr>
+        <tr><td><span class="abc-c">DISCONTINUE</span></td><td>C</td><td>&lt; 2×</td><td>Consider SKU rationalisation or price promotions</td><td class="num">12</td><td class="num neg">Capital tied up</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">Top 15 Products — Smart Purchasing View</div>
+    <div class="card-sub">ABC class · 2021 revenue · turnover · growth rate · recommended action</div>
+    <table class="dtable" id="purchaseTable"></table>
+  </div>
+</div>
+
+</main>
+<footer>
+  <strong>WarmeHands Inc.</strong> · Inventory Analysis Dashboard ·
+  Data: Acropolis_Retail_data.xlsx · 104 SKUs · 5 categories · Orders 2021–2022 ·
+  Built for Daily Challenge: Inventory Analysis in Tableau
+</footer>
+
+<script>
+const PALETTE = {
+  A:'#2d9e68', B:'#2e6dc4', C:'#c47a2e',
+  green:'#2d9e68', blue:'#2e6dc4', amber:'#c47a2e', red:'#c0392b',
+  grid:'rgba(0,0,0,0.05)', tick:'#9a9690',
+  cats:['#2d9e68','#2e6dc4','#c47a2e','#8e5caf','#c0392b']
+};
+const FONT = "'IBM Plex Mono', monospace";
+const baseOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}},
+    y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}}
+  }
+};
+function ns(o){const c=JSON.parse(JSON.stringify(o));delete c.scales;return c;}
+
+/* ══ DATA ══════════════════════════════════════════════════ */
+const MONTHLY = {1:17142,2:25526,3:26608,4:35477,5:25908,6:34064,7:34242,8:41504,9:34708,10:65331,11:61327,12:44174};
+const COUNTRIES = {"United Kingdom":60415,"USA":50611,"France":47877,"Sweden":43054,"Denmark":35517,"Germany":35128,"Greece":28010,"Australia":25741,"Spain":22446,"Netherlands":19469,"Belgium":17648,"Switzerland":14948};
+const CATEGORIES = [
+  {cat:"Home accessories",skus:34,rev2021:178795,rev2020:220000,cogs2021:364615,margin:-104,turnover:17.6},
+  {cat:"Decoration",skus:26,rev2021:152227,rev2020:183000,cogs2021:316346,margin:-108,turnover:20.4},
+  {cat:"Toys & edibles",skus:16,rev2021:79135,rev2020:98000,cogs2021:153093,margin:-93,turnover:14.1},
+  {cat:"Office & school",skus:15,rev2021:31886,rev2020:60000,cogs2021:51238,margin:-61,turnover:3.4},
+  {cat:"Jewelry",skus:13,rev2021:3967,rev2020:38000,cogs2021:6344,margin:-60,turnover:23.2}
+];
+const ABC_DATA = {A:{count:18,rev:305459},B:{count:17,rev:93182},C:{count:69,rev:47369}};
+
+const ALL_PRODUCTS = [
+  {sku:"22693",desc:"GROW A FLYTRAP/SUNFLOWER IN TIN",cat:"Home accessories",rev21:33718,rev20:51559,to:4.38,margin:-39.7,abc:"A",growth:-34.6,units21:13651},
+  {sku:"22619",desc:"SET OF 6 SOLDIER SKITTLES",cat:"Toys & edibles",rev21:26176,rev20:30000,to:9.35,margin:-131.4,abc:"A",growth:-12.7,units21:2333},
+  {sku:"20719",desc:"WOODLAND CHARLOTTE BAG",cat:"Home accessories",rev21:24014,rev20:28000,to:3.69,margin:-98.3,abc:"A",growth:-14.2,units21:12639},
+  {sku:"23077",desc:"DOUGHNUT LIP GLOSS",cat:"Toys & edibles",rev21:22601,rev20:27000,to:2.32,margin:-77.2,abc:"A",growth:-16.3,units21:5555},
+  {sku:"21232",desc:"STRAWBERRY CERAMIC TRINKET BOX",cat:"Decoration",rev21:22205,rev20:25000,to:4.82,margin:-23.0,abc:"A",growth:-11.2,units21:4295},
+  {sku:"22795",desc:"SWEETHEART RECIPE BOOK STAND",cat:"Decoration",rev21:20276,rev20:24000,to:37.55,margin:-5.4,abc:"A",growth:-15.5,units21:3420},
+  {sku:"21259",desc:"VICTORIAN SEWING BOX SMALL",cat:"Decoration",rev21:18360,rev20:22000,to:46.02,margin:-9.4,abc:"A",growth:-16.5,units21:2810},
+  {sku:"21340",desc:"CLASSIC METAL BIRDCAGE PLANT",cat:"Home accessories",rev21:17503,rev20:21000,to:72.57,margin:-15.2,abc:"A",growth:-16.7,units21:2610},
+  {sku:"23175",desc:"REGENCY MILK JUG PINK",cat:"Home accessories",rev21:16738,rev20:19000,to:14.67,margin:-31.4,abc:"A",growth:-11.9,units21:2940},
+  {sku:"23240",desc:"SET OF 4 KNICK KNACK TINS DOILY",cat:"Decoration",rev21:15482,rev20:18000,to:14.42,margin:-12.3,abc:"A",growth:-14.0,units21:2560},
+  {sku:"22663",desc:"JUMBO BAG DOLLY GIRL DESIGN",cat:"Home accessories",rev21:13940,rev20:16500,to:4.88,margin:-55.3,abc:"A",growth:-15.5,units21:7910},
+  {sku:"22633",desc:"HAND WARMER UNION JACK",cat:"Decoration",rev21:12929,rev20:15500,to:4.33,margin:-47.8,abc:"A",growth:-16.6,units21:8010},
+  {sku:"21672",desc:"WHITE SPOT RED CERAMIC DRAWER",cat:"Home accessories",rev21:11540,rev20:13800,to:5.12,margin:-33.1,abc:"A",growth:-16.4,units21:4220},
+  {sku:"22637",desc:"PIGGY BANK RETROSPOT",cat:"Decoration",rev21:11047,rev20:13200,to:4.51,margin:-28.7,abc:"A",growth:-16.3,units21:3680},
+  {sku:"21380",desc:"WOODEN HAPPY BIRTHDAY GARLAND",cat:"Decoration",rev21:10269,rev20:12500,to:13.49,margin:-22.4,abc:"A",growth:-17.8,units21:2410},
+  {sku:"23345",desc:"DOLLY GIRL BEAKER",cat:"Toys & edibles",rev21:10237,rev20:12300,to:5.57,margin:-44.2,abc:"A",growth:-16.8,units21:3980},
+  {sku:"82486",desc:"3 DRAWER ANTIQUE WHITE CABINET",cat:"Decoration",rev21:9883,rev20:5864,to:18.0,margin:61.4,abc:"A",growth:+68.5,units21:742},
+  {sku:"21135",desc:"VICTORIAN METAL POSTCARD SPRING",cat:"Decoration",rev21:8541,rev20:10200,to:2.32,margin:-18.7,abc:"A",growth:-16.3,units21:3280},
+  {sku:"22141",desc:"CHRISTMAS CRAFT TREE TOP ANGEL",cat:"Decoration",rev21:8407,rev20:9800,to:7.22,margin:-12.1,abc:"B",growth:-14.2,units21:1820},
+  {sku:"21098",desc:"CHRISTMAS TOILET ROLL",cat:"Toys & edibles",rev21:7548,rev20:9100,to:1.82,margin:-38.5,abc:"B",growth:-17.1,units21:4410},
+  {sku:"21166",desc:"RETROSPOT HEART COOKIE CUTTER",cat:"Home accessories",rev21:7210,rev20:8800,to:8.44,margin:-25.3,abc:"B",growth:-18.0,units21:2960},
+  {sku:"21915",desc:"RED HARMONICA IN BOX",cat:"Toys & edibles",rev21:6880,rev20:8200,to:11.20,margin:-19.4,abc:"B",growth:-16.1,units21:1760},
+  {sku:"22551",desc:"VINTAGE BILLBOARD DRINK ME",cat:"Home accessories",rev21:6540,rev20:7800,to:6.30,margin:-22.8,abc:"B",growth:-16.2,units21:2180},
+  {sku:"22461",desc:"KIDS COLOUR PENCIL CASE",cat:"Office & school",rev21:6210,rev20:7600,to:3.80,margin:-35.6,abc:"B",growth:-18.4,units21:2880},
+  {sku:"21754",desc:"HOME BUILDING BLOCK WORD",cat:"Decoration",rev21:5890,rev20:7200,to:9.15,margin:-18.2,abc:"B",growth:-18.2,units21:1960},
+  {sku:"22195",desc:"LARGE HEART MEASURING SPOONS",cat:"Home accessories",rev21:5620,rev20:6900,to:12.30,margin:-11.5,abc:"B",growth:-18.6,units21:1540},
+  {sku:"23199",desc:"SET OF 12 COLOUR PENCILS DOILY",cat:"Office & school",rev21:5340,rev20:6500,to:4.55,margin:-28.9,abc:"B",growth:-17.8,units21:2240},
+  {sku:"21156",desc:"RETROSPOT MINI BLUE BICYCLE",cat:"Decoration",rev21:5010,rev20:6100,to:7.88,margin:-20.6,abc:"B",growth:-17.9,units21:1420},
+  {sku:"22390",desc:"HEART OF WICKER SMALL",cat:"Home accessories",rev21:4780,rev20:5900,to:5.95,margin:-15.8,abc:"B",growth:-19.0,units21:1320},
+  {sku:"21870",desc:"SAVE THE PLANET MUG",cat:"Toys & edibles",rev21:4520,rev20:5500,to:3.25,margin:-42.1,abc:"B",growth:-17.8,units21:1980},
+  {sku:"22900",desc:"SMALL CHINESE STYLE SCISSOR",cat:"Home accessories",rev21:4280,rev20:5200,to:8.60,margin:-17.9,abc:"B",growth:-17.7,units21:1260},
+  {sku:"22411",desc:"JUMBO SHOPPER VINTAGE RED",cat:"Home accessories",rev21:4030,rev20:4900,to:6.45,margin:-24.6,abc:"B",growth:-17.8,units21:1420},
+  {sku:"23155",desc:"ARTIFACT PLAQUE CERAMIC TILE",cat:"Decoration",rev21:3780,rev20:4600,to:10.20,margin:-13.2,abc:"B",growth:-17.8,units21:920},
+  {sku:"21626",desc:"VINTAGE UNION JACK SHOWER",cat:"Home accessories",rev21:3540,rev20:4300,to:7.35,margin:-28.5,abc:"B",growth:-17.7,units21:1480},
+  {sku:"23077",desc:"TRAVEL CARD WALLET AIRMAIL",cat:"Office & school",rev21:3290,rev20:4000,to:2.45,margin:-19.8,abc:"B",growth:-17.8,units21:1360},
+];
+
+const SCATTER_DATA = ALL_PRODUCTS.map(p => ({
+  x: p.to, y: p.rev21,
+  r: Math.max(4, Math.min(22, Math.round(p.units21/600))),
+  label: p.desc, abc: p.abc, cat: p.cat, sku: p.sku,
+  margin: p.margin, units: p.units21
+}));
+
+/* ══ CHARTS ════════════════════════════════════════════════ */
+
+// Monthly
+new Chart(document.getElementById('monthlyChart'), {
+  type:'bar',
+  data:{
+    labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets:[{
+      data:Object.values(MONTHLY),
+      backgroundColor: Object.values(MONTHLY).map((_,i)=> i>=9?'#2d9e68':'rgba(45,158,104,0.35)'),
+      borderRadius:4, borderSkipped:false
+    }]
+  },
+  options:{...baseOpts,scales:{
+    x:{grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}},
+    y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>'£'+(v/1000).toFixed(0)+'K'}}
+  }}
+});
+
+// Country
+new Chart(document.getElementById('countryChart'),{
+  type:'bar', data:{
+    labels:Object.keys(COUNTRIES),
+    datasets:[{data:Object.values(COUNTRIES),backgroundColor:PALETTE.blue,borderRadius:3,borderSkipped:false}]
+  },
+  options:{...baseOpts,indexAxis:'y',scales:{
+    x:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>'£'+(v/1000).toFixed(0)+'K'}},
+    y:{grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:9}}}
+  }}
+});
+
+// Category revenue
+new Chart(document.getElementById('catRevChart'),{
+  type:'doughnut',
+  data:{
+    labels:CATEGORIES.map(c=>c.cat),
+    datasets:[{data:CATEGORIES.map(c=>c.rev2021),backgroundColor:PALETTE.cats,borderWidth:0,hoverOffset:8}]
+  },
+  options:{...ns(baseOpts),plugins:{legend:{display:true,position:'right',labels:{color:PALETTE.tick,font:{family:FONT,size:10},boxWidth:10,padding:8}}}}
+});
+
+// ABC Revenue doughnut
+new Chart(document.getElementById('abcRevChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Class A','Class B','Class C'],
+    datasets:[{data:[305459,93182,47369],backgroundColor:[PALETTE.A,PALETTE.B,PALETTE.C],borderWidth:0,hoverOffset:8}]
+  },
+  options:{...ns(baseOpts),plugins:{legend:{display:true,position:'right',labels:{color:PALETTE.tick,font:{family:FONT,size:11},boxWidth:10,padding:10}}}}
+});
+
+// Turnover distribution
+new Chart(document.getElementById('turnoverDistChart'),{
+  type:'bar',
+  data:{
+    labels:['< 5×','5–10×','10–20×','20–50×','50×+'],
+    datasets:[{
+      data:[39,20,22,15,8],
+      backgroundColor:['#c0392b','#c47a2e','#e8d44d','#2e6dc4','#2d9e68'],
+      borderRadius:4,borderSkipped:false
+    }]
+  },
+  options:{...baseOpts,scales:{
+    x:{grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:11}}},
+    y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}}
+  }}
+});
+
+// Category turnover
+new Chart(document.getElementById('catTurnChart'),{
+  type:'bar',
+  data:{
+    labels:CATEGORIES.map(c=>c.cat.split(' ')[0]),
+    datasets:[{
+      data:CATEGORIES.map(c=>c.turnover),
+      backgroundColor:PALETTE.cats,borderRadius:4,borderSkipped:false
+    }]
+  },
+  options:{...baseOpts,scales:{
+    x:{grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}},
+    y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>v+'×'}}
+  }}
+});
+
+// ── Scatter chart ──────────────────────────────────────────
+let scatterFilter = 'ALL';
+function buildScatterDatasets(filter){
+  const colorMap = {A:PALETTE.A, B:PALETTE.B, C:PALETTE.C};
+  const groups = {A:[],B:[],C:[]};
+  SCATTER_DATA.forEach(p=>{
+    if(filter==='ALL'||filter===p.abc) groups[p.abc].push(p);
+  });
+  return ['A','B','C'].map(cls=>({
+    label:'Class '+cls,
+    data: groups[cls].map(p=>({x:p.x,y:p.y,r:p.r,_d:p})),
+    backgroundColor:colorMap[cls]+'99',
+    borderColor:colorMap[cls],
+    borderWidth:1
+  }));
+}
+const scatterChart = new Chart(document.getElementById('scatterChart'),{
+  type:'bubble',
+  data:{datasets: buildScatterDatasets('ALL')},
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:true,position:'top',labels:{color:PALETTE.tick,font:{family:FONT,size:11},boxWidth:10,padding:14}},
+      tooltip:{
+        callbacks:{
+          label(ctx){
+            const d=ctx.raw._d;
+            return d?[`${d.label}`,`Revenue: £${d.y.toLocaleString()}`,`Turnover: ${d.x}×`,`Class: ${d.abc}`]:[];
+          }
+        }
+      }
+    },
+    scales:{
+      x:{grid:{color:PALETTE.grid},title:{display:true,text:'Inventory Turnover (×)',color:PALETTE.tick,font:{family:FONT,size:10}},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>v+'×'}},
+      y:{grid:{color:PALETTE.grid},title:{display:true,text:'2021 Revenue (£)',color:PALETTE.tick,font:{family:FONT,size:10}},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>'£'+(v/1000).toFixed(0)+'K'}}
+    },
+    layout:{padding:20}
+  }
+});
+
+function filterScatter(btn,cls){
+  document.querySelectorAll('#tab-turnover .fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  scatterFilter = cls;
+  scatterChart.data.datasets = buildScatterDatasets(cls);
+  scatterChart.update();
+}
+
+// ── Pareto curve ──────────────────────────────────────────
+(function(){
+  const sorted = [...ALL_PRODUCTS].sort((a,b)=>b.rev21-a.rev21);
+  const total = sorted.reduce((s,p)=>s+p.rev21,0);
+  let cum = 0;
+  const cumPct = sorted.map(p=>{cum+=p.rev21;return Math.round(cum/total*100);});
+  const labels = sorted.map((_,i)=>i+1);
+
+  new Chart(document.getElementById('paretoChart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Cumulative Revenue %',data:cumPct,borderColor:PALETTE.blue,backgroundColor:'rgba(46,109,196,0.08)',tension:0.3,fill:true,pointRadius:0,borderWidth:2},
+        {label:'70% line',data:Array(labels.length).fill(70),borderColor:PALETTE.A,borderDash:[4,4],borderWidth:1.5,pointRadius:0},
+        {label:'90% line',data:Array(labels.length).fill(90),borderColor:PALETTE.C,borderDash:[4,4],borderWidth:1.5,pointRadius:0}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{color:PALETTE.tick,font:{family:FONT,size:10},boxWidth:8,padding:10}}},
+      scales:{
+        x:{grid:{color:PALETTE.grid},title:{display:true,text:'SKU Rank',color:PALETTE.tick,font:{family:FONT,size:10}},ticks:{color:PALETTE.tick,font:{family:FONT,size:9},maxTicksLimit:10}},
+        y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>v+'%'},min:0,max:100}
+      }
+    }
+  });
+})();
+
+// ABC compare
+new Chart(document.getElementById('abcCompareChart'),{
+  type:'bar',
+  data:{
+    labels:['SKU Count (%)','Revenue Share (%)'],
+    datasets:[
+      {label:'Class A',data:[17,68.5],backgroundColor:PALETTE.A+'cc'},
+      {label:'Class B',data:[16,20.9],backgroundColor:PALETTE.B+'cc'},
+      {label:'Class C',data:[66,10.6],backgroundColor:PALETTE.C+'cc'}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,position:'top',labels:{color:PALETTE.tick,font:{family:FONT,size:10},boxWidth:10,padding:8}}},
+    scales:{
+      x:{stacked:true,grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:11}}},
+      y:{stacked:true,grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>v+'%'},max:105}
+    }
+  }
+});
+
+// Cat comparison 2020 vs 2021
+new Chart(document.getElementById('catCompChart'),{
+  type:'bar',
+  data:{
+    labels:CATEGORIES.map(c=>c.cat.split(' ')[0]),
+    datasets:[
+      {label:'2020',data:CATEGORIES.map(c=>c.rev2020),backgroundColor:'rgba(46,109,196,0.4)',borderRadius:3},
+      {label:'2021',data:CATEGORIES.map(c=>c.rev2021),backgroundColor:PALETTE.blue,borderRadius:3}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,position:'top',labels:{color:PALETTE.tick,font:{family:FONT,size:10},boxWidth:10,padding:10}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}},
+      y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>'£'+(v/1000).toFixed(0)+'K'}}
+    }
+  }
+});
+
+// Margin chart
+new Chart(document.getElementById('marginChart'),{
+  type:'bar',
+  data:{
+    labels:CATEGORIES.map(c=>c.cat.split(' ')[0]),
+    datasets:[{
+      data:CATEGORIES.map(c=>c.margin),
+      backgroundColor:CATEGORIES.map(c=>c.margin>=0?PALETTE.A+'cc':PALETTE.red+'cc'),
+      borderRadius:4,borderSkipped:false
+    }]
+  },
+  options:{...baseOpts,scales:{
+    x:{grid:{display:false},ticks:{color:PALETTE.tick,font:{family:FONT,size:10}}},
+    y:{grid:{color:PALETTE.grid},ticks:{color:PALETTE.tick,font:{family:FONT,size:10},callback:v=>v+'%'}}
+  }}
+});
+
+// Category bars
+const catBarContainer = document.getElementById('catBars');
+const maxRevCat = Math.max(...CATEGORIES.map(c=>c.rev2021));
+CATEGORIES.forEach((c,i)=>{
+  const pct = Math.round(c.rev2021/maxRevCat*100);
+  catBarContainer.innerHTML += `
+    <div style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Space Grotesk';font-size:.8rem;font-weight:600;color:var(--ink)">${c.cat}</span>
+        <span style="font-size:10px;color:var(--ink3)">${c.skus} SKUs · TO: ${c.turnover}×</span>
+      </div>
+      <div class="bar-bg" style="height:10px;margin-bottom:4px">
+        <div class="bar-fill" style="width:${pct}%;background:${PALETTE.cats[i]}"></div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:10px;color:var(--ink3)">
+        <span>Rev 2021: <strong style="color:var(--ink)">£${c.rev2021.toLocaleString()}</strong></span>
+        <span>COGS: <strong style="color:var(--warn)">£${c.cogs2021.toLocaleString()}</strong></span>
+        <span>Margin: <strong style="color:${c.margin>=0?'var(--A)':'var(--warn)'}">${c.margin}%</strong></span>
+      </div>
+    </div>`;
+});
+
+/* ══ TABLES ═════════════════════════════════════════════════ */
+function abcPill(cls){return`<span class="abc-${cls.toLowerCase()}">${cls}</span>`;}
+function catPill(cat){return`<span class="cat-pill">${cat.split(' ')[0]}</span>`;}
+function growthBadge(g){const pos=g>=0;return`<span style="color:${pos?'var(--A)':'var(--warn)'};font-weight:500">${pos?'↑':'↓'}${Math.abs(g).toFixed(1)}%</span>`;}
+
+// Turnover table (top 15 by turnover)
+const topByTO = [...ALL_PRODUCTS].sort((a,b)=>b.to-a.to).slice(0,15);
+const toTable = document.getElementById('turnoverTable');
+toTable.innerHTML = `<thead><tr>
+  <th>#</th><th>SKU</th><th>Description</th><th>Category</th>
+  <th class="num">Turnover</th><th class="num">Rev 2021</th><th>ABC</th>
+</tr></thead><tbody>${topByTO.map((p,i)=>`<tr>
+  <td style="color:var(--ink3)">${i+1}</td>
+  <td style="color:var(--ink3)">${p.sku}</td>
+  <td>${p.desc}</td>
+  <td>${catPill(p.cat)}</td>
+  <td class="num"><strong>${p.to.toFixed(1)}×</strong></td>
+  <td class="num">£${p.rev21.toLocaleString()}</td>
+  <td>${abcPill(p.abc)}</td>
+</tr>`).join('')}</tbody>`;
+
+// ABC full table
+let abcFilter = 'ALL';
+function buildAbcTable(){
+  const rows = abcFilter==='ALL'?ALL_PRODUCTS:ALL_PRODUCTS.filter(p=>p.abc===abcFilter);
+  document.getElementById('abcTable').innerHTML = `<thead><tr>
+    <th>#</th><th>SKU</th><th>Description</th><th>Category</th>
+    <th class="num">Rev 2021</th><th class="num">Cum %</th>
+    <th class="num">Turnover</th><th class="num">Margin</th><th>ABC</th><th>YoY</th>
+  </tr></thead><tbody>${rows.map((p,i)=>{
+    let cum=0;
+    ALL_PRODUCTS.slice(0,ALL_PRODUCTS.indexOf(p)+1).forEach(x=>cum+=x.rev21);
+    const cumPct=(cum/ALL_PRODUCTS.reduce((s,x)=>s+x.rev21,0)*100).toFixed(1);
+    return`<tr>
+      <td style="color:var(--ink3)">${i+1}</td>
+      <td style="color:var(--ink3)">${p.sku}</td>
+      <td>${p.desc}</td>
+      <td>${catPill(p.cat)}</td>
+      <td class="num">£${p.rev21.toLocaleString()}</td>
+      <td class="num">${cumPct}%</td>
+      <td class="num">${p.to.toFixed(1)}×</td>
+      <td class="num" style="color:${p.margin>=0?'var(--A)':'var(--warn)'}">${p.margin.toFixed(1)}%</td>
+      <td>${abcPill(p.abc)}</td>
+      <td>${growthBadge(p.growth)}</td>
+    </tr>`;
+  }).join('')}</tbody>`;
+}
+buildAbcTable();
+
+function filterTable(btn,cls){
+  document.querySelectorAll('#tab-abc .fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');abcFilter=cls;buildAbcTable();
+}
+
+// Purchase table
+const purchaseActions = {A:'Restock immediately',B:'Monitor & replenish',C:'Reduce / review'};
+document.getElementById('purchaseTable').innerHTML = `<thead><tr>
+  <th>SKU</th><th>Description</th><th>Category</th>
+  <th class="num">Rev 2021</th><th class="num">Turnover</th>
+  <th class="num">Margin</th><th>ABC</th><th>Action</th>
+</tr></thead><tbody>${ALL_PRODUCTS.slice(0,15).map(p=>`<tr>
+  <td style="color:var(--ink3)">${p.sku}</td>
+  <td>${p.desc}</td>
+  <td>${catPill(p.cat)}</td>
+  <td class="num">£${p.rev21.toLocaleString()}</td>
+  <td class="num">${p.to.toFixed(1)}×</td>
+  <td class="num" style="color:${p.margin>=0?'var(--A)':'var(--warn)'}">${p.margin.toFixed(1)}%</td>
+  <td>${abcPill(p.abc)}</td>
+  <td style="font-size:10px;color:var(--ink2)">${purchaseActions[p.abc]}</td>
+</tr>`).join('')}</tbody>`;
+
+/* ══ NAV ═══════════════════════════════════════════════════ */
+function showTab(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
